@@ -5,7 +5,9 @@ import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Telephony;
@@ -17,7 +19,7 @@ import java.text.BreakIterator;
 public class SmsReceiver extends BroadcastReceiver {
     //    private SmsHander smsHander;
 //    @SuppressLint("UnsafeProtectedBroadcastReceiver")
-//    @Override
+    @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
             // 获取短信相关信息
@@ -33,30 +35,9 @@ public class SmsReceiver extends BroadcastReceiver {
                 }
             }
         }
+    }
 
-//        Bundle bundle=intent.getExtras();
-//        SmsMessage[]  msgs;
-//        String msg_from ;
-//        if(bundle!=null){
-//            try {
-//
-//                Object[] puds=(Object[]) bundle.get("pdus");
-//                msgs=new SmsMessage[puds.length];
-//                for(int i=0;i<msgs.length;i++){
-//                    msgs[i]=SmsMessage.createFromPdu((byte[])puds[i]);
-//                    msg_from=msgs[i].getOriginatingAddress();
-//                    String msgBody=msgs[i].getMessageBody();
-//
-//                    Toast.makeText(context,"From: "+msg_from +", Body: "+msgBody,Toast.LENGTH_SHORT).show();
-//
-//                }
-//            }catch (Exception e){
-//                Toast.makeText(context,e.getMessage(),Toast.LENGTH_SHORT).show();
-//
-//            }
-//        }
-//
-//    }
+
 
 //    private void saveSmsToDatabase(Context context, String sender, String messageBody, long timestamp) {
 //        // 获取数据库实例
@@ -76,5 +57,108 @@ public class SmsReceiver extends BroadcastReceiver {
 //        db.close();
 //    }
 
-    }
+//    DatabaseHelper SmsdbHelper=DatabaseHelper.getInstance(getApplicationContext());
+//
+//
+//
+//    @SuppressLint({"Range", "SetTextI18n"})
+//    @Override
+//    public void onReceive(Context context, Intent intent) {
+//        // 在这里处理接收到的短信
+//        // 获取短信内容
+//        Bundle bundle = intent.getExtras();
+//        SQLiteDatabase db = SmsdbHelper.getWritableDatabase();
+//        ContentValues values = new ContentValues();
+//        if (bundle != null) {
+//            Object[] pdus = (Object[]) bundle.get("pdus");
+//            if (pdus != null && pdus.length > 0) {
+////                    StringBuilder smsContent = new StringBuilder();
+////                    for (Object pdu : pdus) {
+////                        SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) pdu);
+////                        String sender = smsMessage.getDisplayOriginatingAddress();
+////                        String messageBody = smsMessage.getMessageBody();
+////                        String person=smsMessage.getOriginatingAddress();
+////                        long timestamp = smsMessage.getTimestampMillis();
+////                        values.put("address", sender);
+////                        values.put("person", person);
+////                        values.put("body", messageBody);
+////                        values.put("date", timestamp);
+////                        values.put("type", 0);
+////                        long newRowId = db.insert("sms", null, values);
+////                        smsContent.append("Sender: ").append(sender).append("\n");
+////                        smsContent.append("Message: ").append(messageBody).append("\n\n");
+////                    }
+////                    // 更新UI，将短信内容显示在TextView中
+////                    smsTextView.setText(smsContent.toString());
+//                Long lastTime;
+//                Cursor dbCount = db.rawQuery("select count(*) from sms", null);
+//                dbCount.moveToFirst();
+//                if (dbCount.getInt(0) > 0) {
+//                    Cursor dbcur = db.rawQuery("select * from sms order by date desc limit 1", null);
+//                    dbcur.moveToFirst();
+//                    lastTime = Long.parseLong(dbcur.getString(dbcur.getColumnIndex("date")));
+//                } else {
+//                    lastTime = new Long(0);
+//                }
+//                dbCount.close();
+//                dbCount = null;
+//
+//                Cursor cur = getSMSInPhone(); // 获取短信（游标）
+//                db.beginTransaction(); // 开始事务处理
+//                if (cur.moveToFirst()) {
+//                    String address;
+//                    String person;
+//                    String body;
+//                    String date;
+//                    int type;
+//
+//                    int iAddress = cur.getColumnIndex("address");
+//                    int iPerson = cur.getColumnIndex("person");
+//                    int iBody = cur.getColumnIndex("body");
+//                    int iDate = cur.getColumnIndex("date");
+//                    int iType = cur.getColumnIndex("type");
+//
+//                    do {
+//                        address = cur.getString(iAddress);
+//                        person = cur.getString(iPerson);
+//                        body = cur.getString(iBody);
+//                        date = cur.getString(iDate);
+//                        type = cur.getInt(iType);
+//
+//                        if (Long.parseLong(date) > lastTime) {
+//                            String sql = "insert into sms values(null, ?, ?, ?, ?, ?)";
+//                            Object[] bindArgs = new Object[] { address, person, body, date, type };
+//                            db.execSQL(sql, bindArgs);
+//                        } else {
+//                            break;
+//                        }
+//                    } while (cur.moveToNext());
+//
+//                    cur.close();
+//                    cur = null;
+//                    db.setTransactionSuccessful(); 	// 设置事务处理成功，不设置会自动回滚不提交
+//                    db.endTransaction(); 			// 结束事务处理
+//                }
+//
+//            }
+//
+//        }
+//    }
+//
+//
+//
+//    @SuppressLint("Range")
+//    private Cursor getSMSInPhone() {
+//        Uri SMS_CONTENT = Uri.parse("content://sms/");
+//        String[] projection = new String[] { "_id", "address", "person", "body", "date", "type" };
+//        Cursor cursor = this.getContentResolver().query(SMS_CONTENT, projection, null, null, "date desc");	// 获取手机短信
+//
+//        while (cursor.moveToNext()) {
+//            System.out.println("--sms-- : " + cursor.getString(cursor.getColumnIndex("body")));
+//        }
+//
+//        return cursor;
+//    }
+
+
 }

@@ -7,13 +7,21 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     public static final int DATABASE_VERSION = 1;
-    public static final String DATABASE_NAME = "Sms.db";
+    public static final String DATABASE_NAME = "Sms1.db";
+
+    private static DatabaseHelper instance;
+    private SQLiteDatabase database;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-
+    public static synchronized DatabaseHelper getInstance(Context context) {
+        if (instance == null) {
+            instance = new DatabaseHelper(context.getApplicationContext());
+        }
+        return instance;
+    }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -32,5 +40,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    public void close() {
+        if (database != null) {
+            database.close();
+        }
+    }
+
+//    public void delete(SQLiteDatabase db,String table_name){
+//        String sql = "drop table if exists "+table_name;
+//        db.execSQL(sql);
+//    }
 
 }
