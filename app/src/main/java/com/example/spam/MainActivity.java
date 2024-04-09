@@ -31,7 +31,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;
+import org.pytorch.LiteModuleLoader;
+import org.pytorch.Tensor;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.StringTokenizer;
 
@@ -43,6 +47,20 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
 
     private TextView smsTextView;
+    public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
+
+    private Module mModule;
+
+    private HashMap<String, Long> mTokenIdMap;
+    private HashMap<Long, String> mIdTokenMap;
+
+    private final int MODEL_INPUT_LENGTH = 128;
+    private final int EXTRA_ID_NUM = 2;  // In single sentence, we has [CLS] and [SEP]
+    private final String CLS = "[CLS]";
+    private final String SEP = "[SEP]";
+    private final String PAD = "[PAD]";
+    private final String UNK = "[UNK]";
+    public long inferenceTime = 0L;
 
 
     Button button1;
@@ -115,6 +133,14 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint({"Range", "SetTextI18n"})
         @Override
         public void onReceive(Context context, Intent intent) {
+
+            try {
+                mModule = LiteModuleLoader.load(MainActivity.assetFilePath(getApplicationContext(), "model.pt"));
+            } catch (IOException e) {
+                Log.e("BERT Inference", "Error reading assets", e);
+                finish();
+            }
+
             // 在这里处理接收到的短信
             // 获取短信内容
             SQLiteDatabase db = dbHelper.getWritableDatabase();
