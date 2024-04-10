@@ -3,6 +3,10 @@ package com.example.spam;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.icu.text.SimpleDateFormat;
+import android.net.ParseException;
+
+import java.util.Date;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
@@ -10,7 +14,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "Sms1.db";
 
     private static DatabaseHelper instance;
-    private SQLiteDatabase database;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -40,15 +43,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public void close() {
-        if (database != null) {
-            database.close();
-        }
+
+    public void deleteItem(String address,String date,String body) {
+        SQLiteDatabase db = instance.getWritableDatabase();
+        db.delete("sms", "address = ? and date = ? and body = ?", new String[]{address,date,body});
+        db.close();
     }
 
-//    public void delete(SQLiteDatabase db,String table_name){
-//        String sql = "drop table if exists "+table_name;
-//        db.execSQL(sql);
-//    }
+
+
+
 
 }
