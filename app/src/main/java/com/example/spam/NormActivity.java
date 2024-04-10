@@ -1,6 +1,8 @@
 package com.example.spam;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -9,9 +11,11 @@ import android.os.Bundle;
 import android.provider.Telephony;
 import android.text.format.DateFormat;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,12 +27,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class NormActivity extends AppCompatActivity {
+public class NormActivity extends AppCompatActivity implements View.OnClickListener{
 
     private DatabaseHelper dbHelper;
 
+    private SmsAdapter adapter;
+
+    private List<Sms> sms_List ;
+
     Button button;
     ListView listView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,16 +47,14 @@ public class NormActivity extends AppCompatActivity {
         listView=findViewById(R.id.list_norm);
         dbHelper=DatabaseHelper.getInstance(getApplicationContext());
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setClass(NormActivity.this,MainActivity.class);
-                startActivity(intent);
-            }
+        button.setOnClickListener(v -> {
+//            Intent intent = new Intent();
+//            intent.setClass(NormActivity.this,MainActivity.class);
+//            startActivity(intent);
+            finish();
         });
 
-        Cursor dbCount = db.rawQuery("select * from sms where type = 1 order by date desc", null);
+
         String[] projection = {
                 "address",
                 "body",
@@ -70,9 +77,29 @@ public class NormActivity extends AppCompatActivity {
                 sortOrder               // The sort order
         );
 
-        List<Sms> sms_List = new ArrayList<>();
+        sms_List=new ArrayList<>();
         if (cursor.moveToFirst()) {
-            while (cursor.moveToNext()) {
+////            while (cursor.moveToNext()) {
+//                String address;
+//                String body;
+//                String date;
+//
+//
+//                int iAddress = cursor.getColumnIndex("address");
+//
+//                int iBody = cursor.getColumnIndex("body");
+//                int iDate = cursor.getColumnIndex("date");
+//
+//                address = cursor.getString(iAddress);
+//
+//                body = cursor.getString(iBody);
+//                date = cursor.getString(iDate);
+//
+//                Sms sms=new Sms(address,body,date);
+//                sms_List.add(sms);
+////            }
+            do {
+                // 读取数据
                 String address;
                 String body;
                 String date;
@@ -86,31 +113,73 @@ public class NormActivity extends AppCompatActivity {
                 address = cursor.getString(iAddress);
 
                 body = cursor.getString(iBody);
-//                date = cursor.getString(iDate);
-                long dateReceived = cursor.getLong(iDate);
-                date = getDate(dateReceived);
+                date = cursor.getString(iDate);
 
                 Sms sms=new Sms(address,body,date);
                 sms_List.add(sms);
-            }
+                // 处理数据
+            } while (cursor.moveToNext());
         }
         cursor.close();
-        SmsAdapter adapter=new SmsAdapter(this,R.layout.sms_item,sms_List);
+//        SmsAdapter adapter=new SmsAdapter(this,R.layout.sms_item,sms_List);
+        db.close();
+        adapter=new SmsAdapter(this,sms_List);
         listView.setAdapter(adapter);
+//        listView.setOnItemClickListener((parent, view, position, id) -> {
+//            // 第二步：通过Intent跳转至新的页面
+//            Intent intent = new Intent(NormActivity.this, BodyActivity.class);
+//            startActivity(intent);
+//        });
+//
+//        listView.setOnItemClickListener((parent, view, position, id) -> Toast.makeText(NormActivity.this, position + "号位置的条目被点击", Toast.LENGTH_SHORT).show());
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // 获取点击的项对应的数据
+//                Sms item = sms_List.get(position);
+                String address = adapter.get_address(position);
+                String date = adapter.get_date(position);
+                String body = adapter.get_body(position);
+
+                // 创建 Intent 跳转到子界面，并传递数据
+                Intent intent = new Intent();
+                intent.setClass(NormActivity.this, BodyActivity.class);
+                intent.putExtra("address", address);
+                intent.putExtra("date", date);
+                intent.putExtra("body", body);
+                startActivity(intent);
+            }
+        });
 
     }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//    }
 
-    private String getDate(long time) {
-        Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-        cal.setTimeInMillis(time);
-        String date = DateFormat.format("yyyy-MM-dd HH:mm:ss", cal.getTime()).toString();
-        return date;
+
+    public void onClick(View v) {
+        //lv条目中 iv_del
+                final int position = (int) v.getTag(); //获取被点击的控件所在item 的位置，setTag 存储的object，所以此处要强转
+
+                //点击删除按钮之后，给出dialog提示
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle( position + "号位置的删除按钮被点击，确认删除?");
+                builder.setNegativeButton("取消", (dialog, which) -> {
+                });
+                builder.setPositiveButton("确定", (dialog, which) -> {
+                    String address = adapter.get_address(position);
+                    String date = adapter.get_date(position);
+                    String body = adapter.get_body(position);
+                    dbHelper.deleteItem(address,date,body);
+                    sms_List.remove(position);
+                    adapter.notifyDataSetChanged();
+                });
+                builder.show();
     }
 
+    @Override
+    protected void onDestroy() {
+        dbHelper.close();
+        super.onDestroy();
+    }
 
 }

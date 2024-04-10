@@ -25,6 +25,9 @@
         <activity
             android:name=".NormActivity"
             android:exported="false" />
+        <activity
+            android:name=".BodyActivity"
+            android:exported="false" />
 
 <!--        <receiver-->
 <!--            android:name=".SmsReceiver"-->
