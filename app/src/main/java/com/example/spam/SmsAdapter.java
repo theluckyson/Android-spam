@@ -125,7 +125,6 @@ public class SmsAdapter extends BaseAdapter {
         TextView sms_date;
         TextView sms_body;
         TextView sms_time;
-
         Button sms_delete;
     }
 

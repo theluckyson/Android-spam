@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private HashMap<String, Long> mTokenIdMap;
     private HashMap<Long, String> mIdTokenMap;
 
-    private final int MODEL_INPUT_LENGTH = 512;
+    private final int MODEL_INPUT_LENGTH = 64;
     private final int EXTRA_ID_NUM = 2;  // In single sentence, we has [CLS] and [SEP]
     private final String CLS = "[CLS]";
     private final String SEP = "[SEP]";

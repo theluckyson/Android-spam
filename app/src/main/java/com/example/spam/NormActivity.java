@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.provider.Telephony;
@@ -15,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -22,6 +24,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +38,12 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
 
     private List<Sms> sms_List ;
 
+    TextView textView;
     Button button;
     ListView listView;
+    SwipeRefreshLayout srl_my_refresh;
 
+    @SuppressLint({"ResourceAsColor", "MissingInflatedId"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,15 +51,16 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_norm);
         button=findViewById(R.id.back1);
         listView=findViewById(R.id.list_norm);
+        textView=findViewById(R.id.textView_null1);
+        textView.setVisibility(View.GONE);
+        srl_my_refresh = findViewById(R.id.srl_my_refresh1);
+        srl_my_refresh.setColorSchemeColors(Color.parseColor("#ff0000"), Color.parseColor("#00ff00"));
+        srl_my_refresh.setProgressBackgroundColorSchemeColor(Color.parseColor("#0000ff"));
         dbHelper=DatabaseHelper.getInstance(getApplicationContext());
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         button.setOnClickListener(v -> {
-//            Intent intent = new Intent();
-//            intent.setClass(NormActivity.this,MainActivity.class);
-//            startActivity(intent);
             finish();
         });
-
 
         String[] projection = {
                 "address",
@@ -79,25 +86,6 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
 
         sms_List=new ArrayList<>();
         if (cursor.moveToFirst()) {
-////            while (cursor.moveToNext()) {
-//                String address;
-//                String body;
-//                String date;
-//
-//
-//                int iAddress = cursor.getColumnIndex("address");
-//
-//                int iBody = cursor.getColumnIndex("body");
-//                int iDate = cursor.getColumnIndex("date");
-//
-//                address = cursor.getString(iAddress);
-//
-//                body = cursor.getString(iBody);
-//                date = cursor.getString(iDate);
-//
-//                Sms sms=new Sms(address,body,date);
-//                sms_List.add(sms);
-////            }
             do {
                 // 读取数据
                 String address;
@@ -151,6 +139,59 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(intent);
             }
         });
+
+        srl_my_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                //判断是否在刷新
+                Toast.makeText(NormActivity.this,srl_my_refresh.isRefreshing()?"正在刷新":"刷新完成"
+                        ,Toast.LENGTH_SHORT).show();
+
+                sms_List.clear();
+                SQLiteDatabase db = dbHelper.getReadableDatabase();
+                Cursor cursor = db.query(
+                        "sms",   // The table to query
+                        projection,             // The array of columns to return (pass null to get all)
+                        selection,              // The columns for the WHERE clause
+                        selectionArgs,          // The values for the WHERE clause
+                        null,                   // don't group the rows
+                        null,                   // don't filter by row groups
+                        sortOrder               // The sort order
+                );
+                if (cursor.moveToFirst()) {
+                    do {
+                        // 读取数据
+                        String address;
+                        String body;
+                        String date;
+
+                        int iAddress = cursor.getColumnIndex("address");
+                        int iBody = cursor.getColumnIndex("body");
+                        int iDate = cursor.getColumnIndex("date");
+
+                        address = cursor.getString(iAddress);
+                        body = cursor.getString(iBody);
+                        date = cursor.getString(iDate);
+
+                        Sms sms=new Sms(address,body,date);
+                        sms_List.add(sms);
+                        // 处理数据
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+                db.close();
+                adapter.notifyDataSetChanged();
+                srl_my_refresh.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        //关闭刷新
+                        srl_my_refresh.setRefreshing(false);
+                    }
+                },1000);
+            }
+        });
+
+
 
     }
 

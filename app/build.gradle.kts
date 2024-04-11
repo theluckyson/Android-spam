@@ -34,6 +34,7 @@ android {
 
 dependencies {
     implementation("org.pytorch:pytorch_android:2.1.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
