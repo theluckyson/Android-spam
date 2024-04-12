@@ -47,7 +47,6 @@ public class NormActivity extends AppCompatActivity {
             }
         });
 
-        Cursor dbCount = db.rawQuery("select * from sms where type = 1 order by date desc", null);
         String[] projection = {
                 "address",
                 "body",
