@@ -11,12 +11,10 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:text="Hello World!"
-            android:textColor="#000000"
+            android:textColor="@android:color/white"
             android:textSize="30sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.313"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/sms_delete"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.0"
             tools:ignore="MissingConstraints" />
@@ -28,7 +26,9 @@
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:text="Hello World!"
+            android:textColor="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/sms_time"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
@@ -38,27 +38,32 @@
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:text="Hello World!"
+            android:textColor="@android:color/white"
+            app:layout_constraintBottom_toTopOf="@+id/sms_body"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintStart_toEndOf="@+id/sms_address"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0" />
 
         <TextView
             android:id="@+id/sms_body"
-            android:layout_width="329dp"
-            android:layout_height="32dp"
+            android:layout_width="317dp"
+            android:layout_height="31dp"
             android:layout_marginTop="40dp"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="12dp"
             android:text="Hello World!"
+            android:textColor="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
-            android:focusable="false"
             android:id="@+id/sms_delete"
             android:layout_width="75dp"
-            android:layout_height="56dp"
+            android:layout_height="51dp"
+            android:focusable="false"
             android:text="删除"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/sms_body"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"

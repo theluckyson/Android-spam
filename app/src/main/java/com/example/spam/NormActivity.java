@@ -2,6 +2,7 @@ package com.example.spam;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -27,12 +28,17 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
 
 public class NormActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private DatabaseHelper dbHelper;
+//    private DatabaseHelper dbHelper;
 
     private SmsAdapter adapter;
 
@@ -56,7 +62,7 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
         srl_my_refresh = findViewById(R.id.srl_my_refresh1);
         srl_my_refresh.setColorSchemeColors(Color.parseColor("#ff0000"), Color.parseColor("#00ff00"));
         srl_my_refresh.setProgressBackgroundColorSchemeColor(Color.parseColor("#0000ff"));
-        dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+        DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         button.setOnClickListener(v -> {
             finish();
@@ -69,6 +75,12 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
         };
         String selection = "type = ?";
         String[] selectionArgs = { "0" };
+//        String selection = "address IN (SELECT address FROM sms GROUP BY address HAVING MAX(date)) AND type = ?";
+//        String[] selectionArgs = { "0" };
+//        String selection = "type = ?";
+//        String[] selectionArgs = { "0" };
+
+
 
 // How you want the results sorted in the resulting Cursor
         String sortOrder =
@@ -111,15 +123,24 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
         cursor.close();
 //        SmsAdapter adapter=new SmsAdapter(this,R.layout.sms_item,sms_List);
         db.close();
+        dbHelper.close();
+        Map<String, Sms> map = new HashMap<>();
+
+        for (Sms sms : sms_List) {
+            if (!map.containsKey(sms.getAddress()) || Long.parseLong(sms.getDate()) > Long.parseLong(map.get(sms.getAddress()).getDate())) {
+                map.put(sms.getAddress(), sms);
+            }
+        }
+
+        // 将 Map 中的值转换为列表，即保留每个地址中最大日期的短信
+        List<Sms> resultList = new ArrayList<>(map.values());
+        // 更新原始列表
+        sms_List.clear();
+        sms_List.addAll(resultList);
+        Collections.sort(sms_List, comparator);
         adapter=new SmsAdapter(this,sms_List);
         listView.setAdapter(adapter);
-//        listView.setOnItemClickListener((parent, view, position, id) -> {
-//            // 第二步：通过Intent跳转至新的页面
-//            Intent intent = new Intent(NormActivity.this, BodyActivity.class);
-//            startActivity(intent);
-//        });
-//
-//        listView.setOnItemClickListener((parent, view, position, id) -> Toast.makeText(NormActivity.this, position + "号位置的条目被点击", Toast.LENGTH_SHORT).show());
+
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -127,15 +148,17 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
                 // 获取点击的项对应的数据
 //                Sms item = sms_List.get(position);
                 String address = adapter.get_address(position);
-                String date = adapter.get_date(position);
-                String body = adapter.get_body(position);
+                String type="0";
+//                String date = adapter.get_date(position);
+//                String body = adapter.get_body(position);
 
                 // 创建 Intent 跳转到子界面，并传递数据
                 Intent intent = new Intent();
                 intent.setClass(NormActivity.this, BodyActivity.class);
                 intent.putExtra("address", address);
-                intent.putExtra("date", date);
-                intent.putExtra("body", body);
+                intent.putExtra("type", type);
+//                intent.putExtra("date", date);
+//                intent.putExtra("body", body);
                 startActivity(intent);
             }
         });
@@ -144,57 +167,140 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onRefresh() {
                 //判断是否在刷新
-                Toast.makeText(NormActivity.this,srl_my_refresh.isRefreshing()?"正在刷新":"刷新完成"
-                        ,Toast.LENGTH_SHORT).show();
-
-                sms_List.clear();
-                SQLiteDatabase db = dbHelper.getReadableDatabase();
-                Cursor cursor = db.query(
-                        "sms",   // The table to query
-                        projection,             // The array of columns to return (pass null to get all)
-                        selection,              // The columns for the WHERE clause
-                        selectionArgs,          // The values for the WHERE clause
-                        null,                   // don't group the rows
-                        null,                   // don't filter by row groups
-                        sortOrder               // The sort order
-                );
-                if (cursor.moveToFirst()) {
-                    do {
-                        // 读取数据
-                        String address;
-                        String body;
-                        String date;
-
-                        int iAddress = cursor.getColumnIndex("address");
-                        int iBody = cursor.getColumnIndex("body");
-                        int iDate = cursor.getColumnIndex("date");
-
-                        address = cursor.getString(iAddress);
-                        body = cursor.getString(iBody);
-                        date = cursor.getString(iDate);
-
-                        Sms sms=new Sms(address,body,date);
-                        sms_List.add(sms);
-                        // 处理数据
-                    } while (cursor.moveToNext());
-                }
-                cursor.close();
-                db.close();
-                adapter.notifyDataSetChanged();
-                srl_my_refresh.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        //关闭刷新
-                        srl_my_refresh.setRefreshing(false);
-                    }
-                },1000);
+//                Toast.makeText(NormActivity.this,srl_my_refresh.isRefreshing()?"正在刷新":"刷新完成"
+//                        ,Toast.LENGTH_SHORT).show();
+//
+//                sms_List.clear();
+//                DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+//                SQLiteDatabase db = dbHelper.getReadableDatabase();
+//                Cursor cursor = db.query(
+//                        "sms",   // The table to query
+//                        projection,             // The array of columns to return (pass null to get all)
+//                        selection,              // The columns for the WHERE clause
+//                        selectionArgs,          // The values for the WHERE clause
+//                        null,                   // don't group the rows
+//                        null,                   // don't filter by row groups
+//                        sortOrder               // The sort order
+//                );
+//                if (cursor.moveToFirst()) {
+//                    do {
+//                        // 读取数据
+//                        String address;
+//                        String body;
+//                        String date;
+//
+//                        int iAddress = cursor.getColumnIndex("address");
+//                        int iBody = cursor.getColumnIndex("body");
+//                        int iDate = cursor.getColumnIndex("date");
+//
+//                        address = cursor.getString(iAddress);
+//                        body = cursor.getString(iBody);
+//                        date = cursor.getString(iDate);
+//
+//                        Sms sms=new Sms(address,body,date);
+//                        sms_List.add(sms);
+//                        // 处理数据
+//                    } while (cursor.moveToNext());
+//                }
+//                cursor.close();
+//                db.close();
+//                dbHelper.close();
+//                for (Sms sms : sms_List) {
+//                    if (!map.containsKey(sms.getAddress()) || Long.parseLong(sms.getDate()) > Long.parseLong(map.get(sms.getAddress()).getDate())) {
+//                        map.put(sms.getAddress(), sms);
+//                    }
+//                }
+//
+//                // 将 Map 中的值转换为列表，即保留每个地址中最大日期的短信
+//                List<Sms> resultList = new ArrayList<>(map.values());
+//                // 更新原始列表
+//                sms_List.clear();
+//                sms_List.addAll(resultList);
+//                Collections.sort(sms_List, comparator);
+//                adapter.notifyDataSetChanged();
+//                srl_my_refresh.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        //关闭刷新
+//                        srl_my_refresh.setRefreshing(false);
+//                    }
+//                },1000);
+                load();
             }
         });
-
-
-
     }
 
+
+    public void load(){
+            Toast.makeText(NormActivity.this,srl_my_refresh.isRefreshing()?"正在刷新":"刷新完成"
+                    ,Toast.LENGTH_SHORT).show();
+
+            sms_List.clear();
+            DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+            SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String[] projection = {
+                "address",
+                "body",
+                "date",
+        };
+        String selection = "type = ?";
+        String[] selectionArgs = { "0" };
+        String sortOrder =
+                "date DESC";
+            Cursor cursor = db.query(
+                    "sms",   // The table to query
+                    projection,             // The array of columns to return (pass null to get all)
+                    selection,              // The columns for the WHERE clause
+                    selectionArgs,          // The values for the WHERE clause
+                    null,                   // don't group the rows
+                    null,                   // don't filter by row groups
+                    sortOrder               // The sort order
+            );
+            if (cursor.moveToFirst()) {
+                do {
+                    // 读取数据
+                    String address;
+                    String body;
+                    String date;
+
+                    int iAddress = cursor.getColumnIndex("address");
+                    int iBody = cursor.getColumnIndex("body");
+                    int iDate = cursor.getColumnIndex("date");
+
+                    address = cursor.getString(iAddress);
+                    body = cursor.getString(iBody);
+                    date = cursor.getString(iDate);
+
+                    Sms sms=new Sms(address,body,date);
+                    sms_List.add(sms);
+                    // 处理数据
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+            db.close();
+            dbHelper.close();
+            Map<String, Sms> map = new HashMap<>();
+            for (Sms sms : sms_List) {
+                if (!map.containsKey(sms.getAddress()) || Long.parseLong(sms.getDate()) > Long.parseLong(map.get(sms.getAddress()).getDate())) {
+                    map.put(sms.getAddress(), sms);
+                }
+            }
+
+            // 将 Map 中的值转换为列表，即保留每个地址中最大日期的短信
+            List<Sms> resultList = new ArrayList<>(map.values());
+            // 更新原始列表
+            sms_List.clear();
+            sms_List.addAll(resultList);
+            Collections.sort(sms_List, comparator);
+            adapter.notifyDataSetChanged();
+            srl_my_refresh.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //关闭刷新
+                    srl_my_refresh.setRefreshing(false);
+                }
+            },1000);
+        }
 
 
     public void onClick(View v) {
@@ -210,8 +316,70 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
                     String address = adapter.get_address(position);
                     String date = adapter.get_date(position);
                     String body = adapter.get_body(position);
-                    dbHelper.deleteItem(address,date,body);
+                    DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+                    SQLiteDatabase db1 = dbHelper.getWritableDatabase();
+                    ContentValues values = new ContentValues();
+                    values.put("type", 1);
+//                    db1.delete("sms", "address = ? and date = ? and body = ?", new String[]{address,date,body});
+                    db1.update("sms", values, "address = ? AND date = ? AND body = ?", new String[]{address, date, body});
+                    db1.close();
                     sms_List.remove(position);
+
+                    Map<String, Sms> map = new HashMap<>();
+                    sms_List.clear();
+                    SQLiteDatabase db = dbHelper.getReadableDatabase();
+                    String[] projection = {
+                            "address",
+                            "body",
+                            "date",
+                    };
+                    String selection = "type = ?";
+                    String[] selectionArgs = { "0" };
+
+                    String sortOrder =
+                            "date DESC";
+                    Cursor cursor = db.query(
+                            "sms",   // The table to query
+                            projection,             // The array of columns to return (pass null to get all)
+                            selection,              // The columns for the WHERE clause
+                            selectionArgs,          // The values for the WHERE clause
+                            null,                   // don't group the rows
+                            null,                   // don't filter by row groups
+                            sortOrder               // The sort order
+                    );
+                    if (cursor.moveToFirst()) {
+                        do {
+                            // 读取数据
+
+                            int iAddress = cursor.getColumnIndex("address");
+                            int iBody = cursor.getColumnIndex("body");
+                            int iDate = cursor.getColumnIndex("date");
+
+                            address = cursor.getString(iAddress);
+                            body = cursor.getString(iBody);
+                            date = cursor.getString(iDate);
+
+                            Sms sms=new Sms(address,body,date);
+                            sms_List.add(sms);
+                            // 处理数据
+                        } while (cursor.moveToNext());
+                    }
+                    cursor.close();
+                    db.close();
+                    dbHelper.close();
+                    for (Sms sms : sms_List) {
+                        if (!map.containsKey(sms.getAddress()) || Long.parseLong(sms.getDate()) > Long.parseLong(map.get(sms.getAddress()).getDate())) {
+                            map.put(sms.getAddress(), sms);
+                        }
+                    }
+
+                    // 将 Map 中的值转换为列表，即保留每个地址中最大日期的短信
+                    List<Sms> resultList = new ArrayList<>(map.values());
+                    // 更新原始列表
+                    sms_List.clear();
+                    sms_List.addAll(resultList);
+                    Collections.sort(sms_List, comparator);
+
                     adapter.notifyDataSetChanged();
                 });
                 builder.show();
@@ -219,8 +387,17 @@ public class NormActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onDestroy() {
-        dbHelper.close();
+//        dbHelper.close();
         super.onDestroy();
+
     }
+
+    Comparator<Sms> comparator = new Comparator<Sms>() {
+        @Override
+        public int compare(Sms sms1, Sms sms2) {
+            // 降序排列
+            return Long.compare(Long.parseLong(sms2.getDate()), Long.parseLong(sms1.getDate()));
+        }
+    };
 
 }

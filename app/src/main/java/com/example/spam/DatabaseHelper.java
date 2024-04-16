@@ -44,12 +44,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public void deleteItem(String address,String date,String body) {
-        SQLiteDatabase db = instance.getWritableDatabase();
-        db.delete("sms", "address = ? and date = ? and body = ?", new String[]{address,date,body});
-        db.close();
-    }
-
+//    public void deleteItem(String address,String date,String body) {
+//        SQLiteDatabase db = instance.getWritableDatabase();
+//        db.delete("sms", "address = ? and date = ? and body = ?", new String[]{address,date,body});
+//        db.close();
+//    }
+//
+//    public void deleteBody(String date) {
+//        SQLiteDatabase db = instance.getWritableDatabase();
+//        db.delete("sms", "date = ?", new String[]{date});
+//        db.close();
+//    }
 
 
 

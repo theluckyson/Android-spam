@@ -3,6 +3,7 @@ package com.example.spam;
 public class Sms {
 //    private int _id;
     private String address;
+
 //    private String person;
     private String body;
     private String date;
