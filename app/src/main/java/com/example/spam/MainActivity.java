@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
     private SmsReceiver smsReceiver;
 
-    private DatabaseHelper dbHelper;
+//    private DatabaseHelper dbHelper;
 
     private TextView smsTextView;
 
@@ -86,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
         button1 = findViewById(R.id.norm);
         button2 = findViewById(R.id.spam);
         smsTextView = findViewById(R.id.smsTextView);
-        dbHelper = DatabaseHelper.getInstance(getApplicationContext());
+        smsTextView.setVisibility(View.GONE);
+//        DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
         button1.setOnClickListener(v -> {
             Intent intent = new Intent();
             intent.setClass(MainActivity.this, SpamActivity.class);
@@ -142,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
         registerReceiver(smsReceiver, intentFilter);
+        startDeleteService();
     }
 
     @Override
@@ -172,8 +174,9 @@ public class MainActivity extends AppCompatActivity {
         if (smsReceiver != null) {
             unregisterReceiver(smsReceiver);
         }
-        dbHelper.close();
+//        dbHelper.close();
         super.onDestroy();
+        stopDeleteService();
     }
 
     @Override
@@ -196,8 +199,9 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             // 在这里处理接收到的短信
             // 获取短信内容
-//            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            SQLiteDatabase db =GetDb();
+            DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+//            SQLiteDatabase db =GetDb();
             Long lastTime;
             Cursor dbCount = db.rawQuery("select count(*) from sms", null);
             dbCount.moveToFirst();
@@ -254,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
                 db.endTransaction();// 结束事务处理
             }
             db.close();
+            dbHelper.close();
         }
 
         }
@@ -430,9 +435,20 @@ public class MainActivity extends AppCompatActivity {
         return a;
     }
 
-    private SQLiteDatabase GetDb(){
-        SQLiteDatabase db =this.dbHelper.getWritableDatabase();
-        return db;
+//    private SQLiteDatabase GetDb(){
+//        DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+//        SQLiteDatabase db =dbHelper.getWritableDatabase();
+//        return db;
+//    }
+
+    private void startDeleteService() {
+        Intent intent = new Intent(this, DeleteDataService.class);
+        startService(intent);
+    }
+
+    private void stopDeleteService() {
+        Intent intent = new Intent(this, DeleteDataService.class);
+        stopService(intent);
     }
 
 
