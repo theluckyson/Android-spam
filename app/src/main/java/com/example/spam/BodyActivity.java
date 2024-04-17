@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.telephony.SmsManager;
@@ -27,10 +28,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class BodyActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -46,6 +51,8 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
     private Button delete;
     private EditText editText;
     private SendReceiver receiver;
+    SwipeRefreshLayout srl_my_refresh;
+    TextView textView;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -53,15 +60,21 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_body);
-        DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+        DatabaseHelper dbHelper = DatabaseHelper.getInstance(getApplicationContext());
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        back=findViewById(R.id.button_back);
-        address=findViewById(R.id.textView2);
-        delete=findViewById(R.id.button_body);
+        back = findViewById(R.id.button_back);
+        address = findViewById(R.id.textView2);
+        delete = findViewById(R.id.button_body);
 //        date=findViewById(R.id.textView3);
-        body=findViewById(R.id.textView);
-        send=findViewById(R.id.button_send);
-        editText=findViewById(R.id.et2);
+        body = findViewById(R.id.textView);
+        send = findViewById(R.id.button_send);
+        editText = findViewById(R.id.et2);
+        textView = findViewById(R.id.textView_null2);
+        textView.setVisibility(View.GONE);
+        srl_my_refresh = findViewById(R.id.srl_my_refresh2);
+        srl_my_refresh.setColorSchemeColors(Color.parseColor("#ff0000"), Color.parseColor("#00ff00"));
+        srl_my_refresh.setProgressBackgroundColorSchemeColor(Color.parseColor("#0000ff"));
+
 
         // 检查是否有发送短信权限，如果没有，则请求权限
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS)
@@ -75,8 +88,8 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
             finish();
         });
 
-        String address1=getIntent().getStringExtra("address");
-        String type=getIntent().getStringExtra("type");
+        String address1 = getIntent().getStringExtra("address");
+        String type = getIntent().getStringExtra("type");
 
         address.setText(address1);
 
@@ -89,10 +102,10 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
 //                        MY_PERMISSIONS_REQUEST_SEND_SMS);
 //            }
 
-            SmsManager smsManager=SmsManager.getDefault();
-            List<String> list=smsManager.divideMessage(editText.getText().toString());
-            for(String sms:list){
-                smsManager.sendTextMessage(address1,null,sms,null,null);
+            SmsManager smsManager = SmsManager.getDefault();
+            List<String> list = smsManager.divideMessage(editText.getText().toString());
+            for (String sms : list) {
+                smsManager.sendTextMessage(address1, null, sms, null, null);
             }
             Toast.makeText(BodyActivity.this, "发送成功", Toast.LENGTH_LONG).show();
             editText.setText(" ");
@@ -103,7 +116,7 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
                 "date",
         };
         String selection = "address = ? AND type = ?";
-        String[] selectionArgs = { address1,type};
+        String[] selectionArgs = {address1, type};
 
         String sortOrder =
                 "date DESC";
@@ -118,7 +131,7 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
                 sortOrder               // The sort order
         );
 
-        sms_List=new ArrayList<>();
+        sms_List = new ArrayList<>();
         if (cursor.moveToFirst()) {
             do {
                 // 读取数据
@@ -131,7 +144,7 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
                 body = cursor.getString(iBody);
                 date = cursor.getString(iDate);
 
-                Body sms=new Body(body,date);
+                Body sms = new Body(body, date);
                 sms_List.add(sms);
                 // 处理数据
             } while (cursor.moveToNext());
@@ -139,8 +152,17 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
         cursor.close();
         db.close();
         dbHelper.close();
-        adapter=new BodyAdapter(this,sms_List);
+        adapter = new BodyAdapter(this, sms_List);
         body.setAdapter(adapter);
+
+        srl_my_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                load();
+            }
+        });
+    }
+
 
 //        receiver=new SendReceiver();
 //        IntentFilter filter=new IntentFilter();
@@ -149,6 +171,68 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
 //        registerReceiver(receiver,filter);
 
 
+
+
+    public void load(){
+        Toast.makeText(BodyActivity.this,srl_my_refresh.isRefreshing()?"正在刷新":"刷新完成"
+                ,Toast.LENGTH_SHORT).show();
+
+        sms_List.clear();
+        DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String[] projection = {
+                "body",
+                "date",
+        };
+        String selection = "address = ? AND type = ?";
+
+        String address1 = getIntent().getStringExtra("address");
+        String type = getIntent().getStringExtra("type");
+
+        String[] selectionArgs = {address1, type};
+
+        String sortOrder =
+                "date DESC";
+
+        Cursor cursor = db.query(
+                "sms",   // The table to query
+                projection,             // The array of columns to return (pass null to get all)
+                selection,              // The columns for the WHERE clause
+                selectionArgs,          // The values for the WHERE clause
+                null,                   // don't group the rows
+                null,                   // don't filter by row groups
+                sortOrder               // The sort order
+        );
+
+//        sms_List = new ArrayList<>();
+        if (cursor.moveToFirst()) {
+            do {
+                // 读取数据
+                String body;
+                String date;
+
+                int iBody = cursor.getColumnIndex("body");
+                int iDate = cursor.getColumnIndex("date");
+
+                body = cursor.getString(iBody);
+                date = cursor.getString(iDate);
+
+                Body sms = new Body(body, date);
+                sms_List.add(sms);
+                // 处理数据
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        dbHelper.close();
+        adapter.notifyDataSetChanged();
+        srl_my_refresh.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //关闭刷新
+                srl_my_refresh.setRefreshing(false);
+            }
+        },1000);
     }
 
     public void onClick(View v) {
