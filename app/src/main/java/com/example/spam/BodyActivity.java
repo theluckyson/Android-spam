@@ -1,9 +1,14 @@
 package com.example.spam;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.icu.util.Calendar;
@@ -15,9 +20,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +34,8 @@ import java.util.Locale;
 
 public class BodyActivity extends AppCompatActivity implements View.OnClickListener{
 
-//    private TextView date;
+    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS = 1;
+    //    private TextView date;
     private List<Body> sms_List ;
 //    private DatabaseHelper dbHelper;
     private BodyAdapter adapter;
@@ -35,6 +45,7 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
     private Button send;
     private Button delete;
     private EditText editText;
+    private SendReceiver receiver;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -50,6 +61,16 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
 //        date=findViewById(R.id.textView3);
         body=findViewById(R.id.textView);
         send=findViewById(R.id.button_send);
+        editText=findViewById(R.id.et2);
+
+        // 检查是否有发送短信权限，如果没有，则请求权限
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.SEND_SMS},
+                    MY_PERMISSIONS_REQUEST_SEND_SMS);
+        }
+
         back.setOnClickListener(v -> {
             finish();
         });
@@ -59,6 +80,23 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
 
         address.setText(address1);
 
+        send.setOnClickListener(v -> {
+            // 检查是否有发送短信权限，如果没有，则请求权限
+//            if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+//                    != PackageManager.PERMISSION_GRANTED) {
+//                ActivityCompat.requestPermissions(this,
+//                        new String[]{Manifest.permission.SEND_SMS},
+//                        MY_PERMISSIONS_REQUEST_SEND_SMS);
+//            }
+
+            SmsManager smsManager=SmsManager.getDefault();
+            List<String> list=smsManager.divideMessage(editText.getText().toString());
+            for(String sms:list){
+                smsManager.sendTextMessage(address1,null,sms,null,null);
+            }
+            Toast.makeText(BodyActivity.this, "发送成功", Toast.LENGTH_LONG).show();
+            editText.setText(" ");
+        });
 
         String[] projection = {
                 "body",
@@ -100,8 +138,17 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
         }
         cursor.close();
         db.close();
+        dbHelper.close();
         adapter=new BodyAdapter(this,sms_List);
         body.setAdapter(adapter);
+
+//        receiver=new SendReceiver();
+//        IntentFilter filter=new IntentFilter();
+////        filter.addAction(SendReceiver.ACTION);
+//        filter.addAction("action.send.sms");
+//        registerReceiver(receiver,filter);
+
+
     }
 
     public void onClick(View v) {
@@ -126,10 +173,56 @@ public class BodyActivity extends AppCompatActivity implements View.OnClickListe
         builder.show();
     }
 
+    @Override
+    protected void onDestroy() {
+        if ( receiver!= null) {
+            unregisterReceiver(receiver);
+        }
+        super.onDestroy();
+    }
+
+
     private String getDate(long time) {
         Calendar cal = Calendar.getInstance(Locale.ENGLISH);
         cal.setTimeInMillis(time);
         String date = DateFormat.format("yyyy-MM-dd HH:mm:ss", cal.getTime()).toString();
         return date;
     }
+
+//    public class SendReceiver extends BroadcastReceiver {
+//
+//        public static final String ACTION = "action.send.sms";
+//
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            String action = intent.getAction();
+//            if (ACTION.equals(action)) {
+//                int resultCode = getResultCode();
+//                if (resultCode == Activity.RESULT_OK) {
+//                    // 发送成功
+//                    Toast.makeText(context, "发送成功", Toast.LENGTH_LONG).show();
+//                } else {
+//                    // 发送失败
+//                    Toast.makeText(context, "发送失败", Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        }
+//    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == MY_PERMISSIONS_REQUEST_SEND_SMS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // 用户授予发送短信权限，执行发送短信的操作
+                Toast.makeText(this, "Permission Granted!.", Toast.LENGTH_SHORT).show();
+            } else {
+                // 用户拒绝发送短信权限，可以给出相应的提示
+                Toast.makeText(this, "Permission not Granted!.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+    }
+
 }
