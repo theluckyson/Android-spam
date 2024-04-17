@@ -43,7 +43,17 @@
 <!--            </intent-filter>-->
 <!--        </receiver>-->
 
-        <activity
+        <receiver
+            android:name=".SendReceiver"
+            android:exported="false"
+        android:permission="android.permission.SEND_SMS">
+        <intent-filter>
+            <action android:name="action.send.sms" />
+        </intent-filter>
+    </receiver>
+
+
+    <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
