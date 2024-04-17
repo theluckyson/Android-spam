@@ -28,6 +28,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;
@@ -50,9 +51,12 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import androidx.core.app.ActivityCompat;
 
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int MY_PERMISSIONS_REQUEST_READ_SMS = 1000;
 
     private SmsReceiver smsReceiver;
 
@@ -100,9 +104,18 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, 1000);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(android.Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+//            requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS}, MY_PERMISSIONS_REQUEST_READ_SMS);
+//        }
+
+//         检查是否有读取短信权限，如果没有，则请求权限
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.READ_SMS,Manifest.permission.RECEIVE_SMS},
+                    MY_PERMISSIONS_REQUEST_READ_SMS);
         }
+
 
         try {
             mModule=Module.load(MainActivity.assetFilePath(getApplicationContext(), "model.pt"));
@@ -182,10 +195,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 1000) {
+        if (grantResults.length > 0 && requestCode == MY_PERMISSIONS_REQUEST_READ_SMS) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Permission Granted!.", Toast.LENGTH_SHORT).show();
-
             } else {
                 Toast.makeText(this, "Permission not Granted!.", Toast.LENGTH_SHORT).show();
                 finish();
@@ -267,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
         private Cursor getSMSInPhone() {
             Uri SMS_CONTENT = Uri.parse("content://sms/");
             String[] projection = new String[]{"_id", "address", "person", "body", "date", "type"};
-            Cursor cursor = this.getContentResolver().query(SMS_CONTENT, projection, null, null, "date desc");    // 获取手机短信
+            Cursor cursor = this.getContentResolver().query(SMS_CONTENT, projection, null, null, "date desc limit 1");    // 获取手机短信
 
             while (cursor.moveToNext()) {
                 System.out.println("--sms-- : " + cursor.getString(cursor.getColumnIndex("body")));
@@ -406,7 +418,8 @@ public class MainActivity extends AppCompatActivity {
 //        inferenceTime += inferenceTime_temp;
 //        Log.d("BERTINFERNCE",  "inference time (ms): " + inferenceTime);
 
-        Map<String, IValue> outTensors = mModule.forward(IValue.from(inTensor), IValue.from(attention_mask)).toDictStringKey();
+//        Map<String, IValue> outTensors = mModule.forward(IValue.from(inTensor), IValue.from(attention_mask)).toDictStringKey();
+        Map<String, IValue> outTensors = mModule.forward(IValue.from(inTensor), IValue.from(attention_mask),IValue.from(token_type_ids)).toDictStringKey();
 
         //1
         //java.lang.IllegalStateException: Expected IValue type Tuple, actual type DictStringKey
