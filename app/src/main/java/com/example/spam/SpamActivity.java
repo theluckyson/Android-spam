@@ -226,69 +226,71 @@ public class SpamActivity extends AppCompatActivity implements View.OnClickListe
         });
         builder.setPositiveButton("确定", (dialog, which) -> {
             String address = adapter.get_address(position);
-            String date = adapter.get_date(position);
-            String body = adapter.get_body(position);
+//            String date = adapter.get_date(position);
+//            String body = adapter.get_body(position);
             DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
 //            dbHelper.deleteItem(address,date,body);
             SQLiteDatabase db1 = dbHelper.getWritableDatabase();
-            db1.delete("sms", "address = ? and date = ? and body = ?", new String[]{address,date,body});
+//            db1.delete("sms", "address = ? and date = ? and body = ?", new String[]{address,date,body});
+            db1.delete("sms", "address = ?  and type = ?", new String[]{address,"1"});
             db1.close();
+            dbHelper.close();
             sms_List.remove(position);
 
-            Map<String, Sms> map = new HashMap<>();
-            sms_List.clear();
-            SQLiteDatabase db = dbHelper.getReadableDatabase();
-            String[] projection = {
-                    "address",
-                    "body",
-                    "date",
-            };
-            String selection = "type = ?";
-            String[] selectionArgs = { "1" };
-
-            String sortOrder =
-                    "date DESC";
-            Cursor cursor = db.query(
-                    "sms",   // The table to query
-                    projection,             // The array of columns to return (pass null to get all)
-                    selection,              // The columns for the WHERE clause
-                    selectionArgs,          // The values for the WHERE clause
-                    null,                   // don't group the rows
-                    null,                   // don't filter by row groups
-                    sortOrder               // The sort order
-            );
-            if (cursor.moveToFirst()) {
-                do {
-                    // 读取数据
-
-                    int iAddress = cursor.getColumnIndex("address");
-                    int iBody = cursor.getColumnIndex("body");
-                    int iDate = cursor.getColumnIndex("date");
-
-                    address = cursor.getString(iAddress);
-                    body = cursor.getString(iBody);
-                    date = cursor.getString(iDate);
-
-                    Sms sms=new Sms(address,body,date);
-                    sms_List.add(sms);
-                    // 处理数据
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
-            db.close();
-            dbHelper.close();
-            for (Sms sms : sms_List) {
-                if (!map.containsKey(sms.getAddress()) || Long.parseLong(sms.getDate()) > Long.parseLong(map.get(sms.getAddress()).getDate())) {
-                    map.put(sms.getAddress(), sms);
-                }
-            }
-
-            // 将 Map 中的值转换为列表，即保留每个地址中最大日期的短信
-            List<Sms> resultList = new ArrayList<>(map.values());
-            // 更新原始列表
-            sms_List.clear();
-            sms_List.addAll(resultList);
-            Collections.sort(sms_List, comparator);
+//            Map<String, Sms> map = new HashMap<>();
+//            sms_List.clear();
+//            SQLiteDatabase db = dbHelper.getReadableDatabase();
+//            String[] projection = {
+//                    "address",
+//                    "body",
+//                    "date",
+//            };
+//            String selection = "type = ?";
+//            String[] selectionArgs = { "1" };
+//
+//            String sortOrder =
+//                    "date DESC";
+//            Cursor cursor = db.query(
+//                    "sms",   // The table to query
+//                    projection,             // The array of columns to return (pass null to get all)
+//                    selection,              // The columns for the WHERE clause
+//                    selectionArgs,          // The values for the WHERE clause
+//                    null,                   // don't group the rows
+//                    null,                   // don't filter by row groups
+//                    sortOrder               // The sort order
+//            );
+//            if (cursor.moveToFirst()) {
+//                do {
+//                    // 读取数据
+//
+//                    int iAddress = cursor.getColumnIndex("address");
+//                    int iBody = cursor.getColumnIndex("body");
+//                    int iDate = cursor.getColumnIndex("date");
+//
+//                    address = cursor.getString(iAddress);
+//                    body = cursor.getString(iBody);
+//                    date = cursor.getString(iDate);
+//
+//                    Sms sms=new Sms(address,body,date);
+//                    sms_List.add(sms);
+//                    // 处理数据
+//                } while (cursor.moveToNext());
+//            }
+//            cursor.close();
+//            db.close();
+//            dbHelper.close();
+//            for (Sms sms : sms_List) {
+//                if (!map.containsKey(sms.getAddress()) || Long.parseLong(sms.getDate()) > Long.parseLong(map.get(sms.getAddress()).getDate())) {
+//                    map.put(sms.getAddress(), sms);
+//                }
+//            }
+//
+//            // 将 Map 中的值转换为列表，即保留每个地址中最大日期的短信
+//            List<Sms> resultList = new ArrayList<>(map.values());
+//            // 更新原始列表
+//            sms_List.clear();
+//            sms_List.addAll(resultList);
+//            Collections.sort(sms_List, comparator);
 
             adapter.notifyDataSetChanged();
         });

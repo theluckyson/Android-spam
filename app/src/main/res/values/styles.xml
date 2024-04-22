@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="WhiteSpinner" parent="Widget.AppCompat.Spinner">
+        <item name="android:textColor">@color/purple</item> <!-- 设置字体颜色为白色 -->
+        <!-- 如果需要设置下拉菜单中选项的字体颜色，可以使用以下属性 -->
+<!--        <item name="android:popupBackground">@color/purple</item>-->
+<!--        设置下拉菜单背景为白色 -->
+        <!--<item name="android:textColorPrimary">#FFFFFF</item>--> <!-- 设置下拉菜单中选项的字体颜色为白色 -->
+    </style>
+
+</resources>

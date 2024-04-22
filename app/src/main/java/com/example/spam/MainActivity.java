@@ -20,6 +20,8 @@ import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -52,6 +54,7 @@ import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import androidx.core.app.ActivityCompat;
+import android.widget.Spinner;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -63,7 +66,8 @@ public class MainActivity extends AppCompatActivity {
 //    private DatabaseHelper dbHelper;
 
     private TextView smsTextView;
-
+    private Spinner NormtimeIntervalSpinner;
+    private Spinner SpamtimeIntervalSpinner;
     private Module mModule;
 
     private HashMap<String, Long> mTokenIdMap;
@@ -76,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
     private final String PAD = "[PAD]";
     private final String UNK = "[UNK]";
     public long inferenceTime = 0L;
-
     Button button1;
     Button button2;
 
@@ -91,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
         button2 = findViewById(R.id.spam);
         smsTextView = findViewById(R.id.smsTextView);
         smsTextView.setVisibility(View.GONE);
+        NormtimeIntervalSpinner = findViewById(R.id.spinner2);
+        SpamtimeIntervalSpinner = findViewById(R.id.spinner3);
 //        DatabaseHelper dbHelper=DatabaseHelper.getInstance(getApplicationContext());
         button1.setOnClickListener(v -> {
             Intent intent = new Intent();
@@ -156,7 +161,68 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("android.provider.Telephony.SMS_RECEIVED");
         registerReceiver(smsReceiver, intentFilter);
-        startDeleteService();
+
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.Norm_spinner, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        ArrayAdapter<CharSequence> adapter_spam = ArrayAdapter.createFromResource(this,
+                R.array.Spam_spinner, android.R.layout.simple_spinner_item);
+        adapter_spam.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // 设置适配器到 Spinner
+        NormtimeIntervalSpinner.setAdapter(adapter);
+        SpamtimeIntervalSpinner.setAdapter(adapter_spam);
+
+        // 设置 Spinner 选择监听器
+        NormtimeIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedItem = parent.getItemAtPosition(position).toString();
+                // 当用户选择了一个选项时，执行相应的逻辑
+                if (selectedItem.equals("删除正常短信")) {
+                    startNormDeleteService(3*24 * 60 * 60 * 1000);
+                }else if (selectedItem.equals("1 minute")) {
+                    startNormDeleteService(60 * 1000);
+                } else if (selectedItem.equals("1 hour")) {
+                    startNormDeleteService(60 * 60 * 1000);
+                } else if (selectedItem.equals("1 day")) {
+                    startNormDeleteService(24 * 60 * 60 * 1000);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // 当没有选项被选择时，不执行任何操作
+                startNormDeleteService(3*24 * 60 * 60 * 1000);
+            }
+        });
+
+        SpamtimeIntervalSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedItem = parent.getItemAtPosition(position).toString();
+                // 当用户选择了一个选项时，执行相应的逻辑
+                if (selectedItem.equals("删除垃圾短信")) {
+                    startSpamDeleteService(24 * 60 * 60 * 1000);
+                }else if (selectedItem.equals("1 minute")) {
+                    startSpamDeleteService(60 * 1000);
+                } else if (selectedItem.equals("1 hour")) {
+                    startSpamDeleteService(60 * 60 * 1000);
+                } else if (selectedItem.equals("1 day")) {
+                    startSpamDeleteService(24 * 60 * 60 * 1000);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // 当没有选项被选择时，不执行任何操作
+                startSpamDeleteService(24 * 60 * 60 * 1000);
+            }
+        });
+
+//        startNormDeleteService();
+//        startSpamDeleteService();
     }
 
     @Override
@@ -189,7 +255,8 @@ public class MainActivity extends AppCompatActivity {
         }
 //        dbHelper.close();
         super.onDestroy();
-        stopDeleteService();
+        stopNormDeleteService();
+        stopSpamDeleteService();
     }
 
     @Override
@@ -454,13 +521,24 @@ public class MainActivity extends AppCompatActivity {
 //        return db;
 //    }
 
-    private void startDeleteService() {
-        Intent intent = new Intent(this, DeleteDataService.class);
+    private void startNormDeleteService(long interval) {
+        Intent intent = new Intent(this, DeleteNormDataService.class);
+        intent.putExtra("interval",interval);
         startService(intent);
     }
 
-    private void stopDeleteService() {
-        Intent intent = new Intent(this, DeleteDataService.class);
+    private void startSpamDeleteService(long interval) {
+        Intent intent = new Intent(this, DeleteSpamDataService.class);
+        intent.putExtra("interval",interval);
+        startService(intent);
+    }
+
+    private void stopNormDeleteService() {
+        Intent intent = new Intent(this, DeleteNormDataService.class);
+        stopService(intent);
+    }
+    private void stopSpamDeleteService() {
+        Intent intent = new Intent(this, DeleteSpamDataService.class);
         stopService(intent);
     }
 

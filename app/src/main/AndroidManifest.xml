@@ -31,7 +31,8 @@
         <activity
             android:name=".BodyActivity"
             android:exported="false" />
-        <service android:name=".DeleteDataService" />
+        <service android:name=".DeleteNormDataService" />
+        <service android:name=".DeleteSpamDataService" />
 
 <!--        <receiver-->
 <!--            android:name=".SmsReceiver"-->
